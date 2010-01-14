@@ -1,0 +1,10 @@
+title=Hello World
+subtitle=Sample App
+mm_icon_focus_hd=pkg:/images/channel_logo_HD.gif
+mm_icon_side_hd=pkg:/images/channel_logo_HD.gif
+mm_icon_focus_sd=pkg:/images/channel_logo_HD.gif
+mm_icon_side_sd=pkg:/images/channel_logo_HD.gif
+major_version=1
+minor_version=0
+build_version=00000
+
