@@ -1,8 +1,26 @@
 'Copyright 2010 Dirk Elmendorf
 
-Sub Main()
-  print 'Hello World! to the console'
+Function Main() as Integer
+  print "Hello World! to the console"
+  print ' you will not see this '
+  p = CreateObject("roMessagePort")
+  screen = CreateObject("roSpringboardScreen")
+  screen.SetMessagePort(p)
+
+  o = CreateObject("roAssociativeArray")
+  o.ContentType = "episode"
+  o.Title = "Sample App"
+  o.Description = "Hello World!"
+  o.SDPosterURL = "pkg:/images/episode_icon_sd.png"
+  o.HDPosterURL = "pkg:/images/episode_icon_sd.png"
+  screen.SetContent(o)
+  screen.AddButton(1, "Exit")
+  screen.Show()
   while true
+    msg = wait(0, p)
+    if msg.isButtonPressed()
+      print "Goodbye World!"
+      return 0
+    endif
   end while
-  print 'Good bye'
-end Sub
+end Function
