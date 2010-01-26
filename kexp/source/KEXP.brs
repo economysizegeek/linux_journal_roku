@@ -1,32 +1,79 @@
 'Copyright 2010 Dirk Elmendorf
 
+Function Init() as Object
+  obj = { 
+    port: CreateObject("roMessagePort")
+    screen: CreateObject("roSpringboardScreen")
+    player: CreateObject("roAudioPlayer")
+    screen_options: CreateObject("roAssociativeArray")
+    song: CreateObject("roAssociativeArray")
+    status: ""
+    drawScreen: function(description) 
+        m.screen_options.Description = description
+        m.screen.SetContent(m.screen_options)
+        m.screen.Show()
+    end function
+    playingNow: function()
+        m.screen.ClearButtons()
+        m.screen.AddButton(1, "Pause Stream")
+        m.screen.AddButton(3, "Exit")
+        m.DrawScreen("Live MP3 Stream from KEXP.org")
+    end function
+    play: function()
+        if m.status = "" then
+          m.player.AddContent(m.song)
+          m.player.SetLoop(true)
+          m.player.play()
+          m.status = "playing"
+        else if m.status = "paused" 
+          m.player.resume()
+          m.status = "playing"
+        endif
 
-Function Main() as Integer
-  app = CreateObject("roAssociativeArray")
+        m.screen.ClearButtons()
+        m.screen.AddButton(3, "Exit")
 
+        m.drawScreen("Buffering....")
+    end function
+    pause: function()
+        if m.status = "playing" then
+          m.player.pause()
+          m.status = "paused"
+        endif
+        
+        m.screen.ClearButtons()
+        m.screen.AddButton(2, "Resume Stream")
+        m.screen.AddButton(3, "Exit")
 
-  app.port = CreateObject("roMessagePort")
-  app.screen = CreateObject("roSpringboardScreen")
-  app.screen.SetMessagePort(app.port)
-  app.player = CreateObject("roAudioPlayer")
-  app.player.SetMessagePort(app.port)
+        m.drawScreen("Stream Paused")
+    end function
+    exit: function() 
+        print "Goodbye World!"
+        m.player.stop()
+        return 0
+    end function
+  }
+  obj.screen.SetMessagePort(obj.port)
+  obj.player.SetMessagePort(obj.port)
   
 
-  app.screen_options = CreateObject("roAssociativeArray")
-  app.screen_options.ContentType = "episode"
-  app.screen_options.Title = "KEXP"
-  app.screen_options.SDPosterURL = "pkg:/images/episode_icon_sd.png"
-  app.screen_options.HDPosterURL = "pkg:/images/episode_icon_sd.png"
-  app.screen.SetStaticRatingEnabled(false)
+  obj.screen_options.ContentType = "episode"
+  obj.screen_options.Title = "KEXP"
+  obj.screen_options.SDPosterURL = "pkg:/images/episode_icon_sd.png"
+  obj.screen_options.HDPosterURL = "pkg:/images/episode_icon_sd.png"
+  obj.screen.SetStaticRatingEnabled(false)
 
 
-  app.song = CreateObject("roAssociativeArray")
-  app.song.Url = "http://kexp-mp3-2.cac.washington.edu:8000/"
-  app.song.StreamFormat = "mp3"
-  app.status = CreateObject("roString")
-  app.status = ""
+  obj.song.Url = "http://kexp-mp3-2.cac.washington.edu:8000/"
+  obj.song.StreamFormat = "mp3"
+  obj.status = ""
+  return(obj)
+end Function
 
-  Play(app)
+Function Main() as Integer
+
+  app = Init()
+  app.play()
 
   while true
     msg = wait(0, app.port)
@@ -34,64 +81,19 @@ Function Main() as Integer
       if msg.isStatusMessage() then
         print "Audio Player Event:"; msg.getmessage()
         if msg.GetMessage() = "start of play" then
-          PlayingNow(app)
+          app.playingNow()
         endif
       endif
     else if msg.isButtonPressed()  then
         if msg.GetIndex() = 1 then 
-          Pause(app)
+          app.pause()
         else if msg.GetIndex() = 2 then 
-          Play(app)
+          app.play()
         else if msg.GetIndex() = 3 then 
-          return ExitApp(app)
+          return app.exit()
         endif
     else if msg.isScreenClosed() then
-      return ExitApp(app)
+      return app.exit()
     endif
   end while
 end Function
-Function ExitApp(app) as Integer
-  print "Goodbye World!"
-  app.player.stop()
-  return 0
-end Function
-Sub DrawScreen(app,description) 
-  app.screen_options.Description = description
-  app.screen.SetContent(app.screen_options)
-  app.screen.Show()
-end Sub
-Sub PlayingNow(app)
-  app.screen.ClearButtons()
-  app.screen.AddButton(1, "Pause Stream")
-  app.screen.AddButton(3, "Exit")
-  DrawScreen(app,"Live MP3 Stream from KEXP.org")
-end Sub
-Sub Play(app)
-  if app.status = "" then
-    app.player.AddContent(app.song)
-    app.player.SetLoop(true)
-    app.player.play()
-    app.status = "playing"
-  else if app.status = "paused" 
-    app.player.resume()
-    app.status = "playing"
-  endif
-
-  app.screen.ClearButtons()
-  app.screen.AddButton(3, "Exit")
-
-  DrawScreen(app, "Buffering....")
-end Sub
-Sub Pause(app)
-  if app.status = "playing" then
-    app.player.pause()
-    app.status = "paused"
-  endif
-  
-  app.screen.ClearButtons()
-  app.screen.AddButton(2, "Resume Stream")
-  app.screen.AddButton(3, "Exit")
-
-  DrawScreen(app, "Stream Paused")
-
-end Sub
